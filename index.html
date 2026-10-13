@@ -28,6 +28,8 @@
   .btn:hover{border-color:var(--brand-2)}
   .btn.primary{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
   .btn.small{padding:4px 8px;font-size:12px}
+  .btn.danger{color:var(--bad);border-color:var(--bad-bg)} .btn.danger:hover{border-color:var(--bad)}
+  .btn.danger.solid{background:var(--bad);border-color:var(--bad);color:#fff}
   header .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
   .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
   .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left}
@@ -48,6 +50,7 @@
   .b-con_certificado,.b-confirmado{background:var(--ok-bg);color:var(--ok)}
   .b-reclamado,.b-sugerido{background:var(--warn-bg);color:var(--warn)}
   .b-sin_certificado,.b-revisar{background:var(--bad-bg);color:var(--bad)}
+  .b-descartado{background:var(--gray-bg);color:var(--muted)}
   .b-sin_lote{background:var(--gray-bg);color:var(--muted)}
   .muted{color:var(--muted)} .count{color:var(--muted);font-size:12px;margin:6px 2px}
   .empty{padding:30px;text-align:center;color:var(--muted)}
@@ -104,6 +107,7 @@
     <div class="bar">
       <input type="search" id="c-q" placeholder="Buscar lote, material o remitente…">
       <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="c-pend" style="width:auto"> Solo por revisar</label>
+      <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="c-desc" style="width:auto"> Ver descartados</label>
     </div>
     <div class="count" id="c-count"></div>
     <div class="tablewrap"><table><thead><tr>
@@ -147,6 +151,15 @@
     <button type="button" class="btn" id="cf-save">Guardar</button><button class="btn primary">Guardar y confirmar</button></div>
 </form></div>
 
+<!-- descartar / anular -->
+<div class="ov" id="ov-del"><form class="modal" id="f-del">
+  <h2 id="del-title">Descartar</h2>
+  <div class="hint" id="del-hint"></div>
+  <label>Motivo (queda registrado con tu nombre)</label><input id="del-motivo" maxlength="300" required placeholder="Ej.: no es un certificado / cargado por error">
+  <div class="err" id="del-err"></div>
+  <div class="acts"><button type="button" class="btn" data-close>Cancelar</button><button class="btn danger solid" id="del-ok">Confirmar</button></div>
+</form></div>
+
 <!-- nueva entrega -->
 <div class="ov" id="ov-ent"><form class="modal" id="f-ent">
   <h2>Nueva entrega</h2>
@@ -170,7 +183,7 @@ const API = "https://certificados-mp-silver-api.diegortizdao.workers.dev";
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const ESTADO = { con_certificado: "Con certificado", reclamado: "Reclamado", sin_certificado: "Sin certificado", sin_lote: "Sin lote" };
-const LECT = { confirmado: "Confirmado", sugerido: "Sugerido", revisar: "Revisar" };
+const LECT = { confirmado: "Confirmado", sugerido: "Sugerido", revisar: "Revisar", descartado: "Descartado" };
 
 let certsLoaded = false, certSeq = 0, session = null, provs = [], entregas = [], certs = [], resumen = null, kpiFilter = "";
 const store = { get(k){ try { return sessionStorage.getItem(k); } catch { return null; } },
@@ -248,12 +261,19 @@ async function loadEntregas() {
     <td>${esc(e.material)}${e.tipo === "masterbatch" ? ' <span class="muted">(MB)</span>' : ""}</td>
     <td><b>${esc(e.lote) || '<span class="muted">—</span>'}</b></td>
     <td>${badge(e.estado, ESTADO[e.estado])}${e.reclamo_estado === "recibido" ? ' <span class="muted" title="Reclamado y recibido">↺</span>' : ""}</td>
-    <td>${e.certificado_vinculado_id ? `<button class="btn small" data-pdf="${e.certificado_vinculado_id}" data-t="${esc(e.lote)}">Ver certificado</button>` : ""}</td></tr>`).join("")
+    <td style="white-space:nowrap">${e.certificado_vinculado_id ? `<button class="btn small" data-pdf="${e.certificado_vinculado_id}" data-t="${esc(e.lote)}">Ver certificado</button> ` : ""}<button class="btn small danger" data-anular="${e.id}" title="Anular esta entrega">Anular</button></td></tr>`).join("")
     : `<tr><td colspan="7" class="empty">Sin resultados</td></tr>`;
 }
 ["e-prov", "e-tipo", "e-estado"].forEach((id) => $("#" + id).addEventListener("change", () => { kpiFilter = ""; loadEntregas(); loadResumen(); }));
 $("#e-q").addEventListener("input", debounce(loadEntregas));
-$("#e-body").addEventListener("click", (e) => { const b = e.target.closest("[data-pdf]"); if (b) openPdf(b.dataset.pdf, b.dataset.t); });
+$("#e-body").addEventListener("click", (e) => {
+  const b = e.target.closest("[data-pdf]"); if (b) return openPdf(b.dataset.pdf, b.dataset.t);
+  const a = e.target.closest("[data-anular]"); if (a) {
+    const x = entregas.find((r) => String(r.id) === a.dataset.anular); if (!x) return;
+    askMotivo({ title: "Anular entrega", hint: `${fd(x.fecha_ingreso)} · ${x.proveedor || ""} · ${x.material || ""} · lote ${x.lote || "—"}. La entrega deja de contarse, pero queda registrada.`,
+      run: (motivo) => send(`/api/entregas/${x.id}/anular`, "POST", { motivo }), after: () => Promise.all([loadEntregas(), loadResumen()]) });
+  }
+});
 
 $("#e-csv").addEventListener("click", () => {
   const cols = ["fecha_ingreso", "proveedor", "tipo_documento", "documento", "material", "lote", "tipo", "estado", "cantidad_kg"];
@@ -268,7 +288,7 @@ async function loadCerts() {
   certsLoaded = true; const seq = ++certSeq;
   $("#c-body").innerHTML = `<tr><td colspan="7" class="empty">Cargando…</td></tr>`;
   let res;
-  try { res = await getJSON("/api/certificados" + ($("#c-pend").checked ? "?pendientes=1" : "")); } catch (e) { if (seq === certSeq) $("#c-body").innerHTML = `<tr><td colspan="7" class="empty">${esc(e.message)}</td></tr>`; return; }
+  try { res = await getJSON("/api/certificados" + ($("#c-pend").checked ? "?pendientes=1" : $("#c-desc").checked ? "?descartados=1" : "")); } catch (e) { if (seq === certSeq) $("#c-body").innerHTML = `<tr><td colspan="7" class="empty">${esc(e.message)}</td></tr>`; return; }
   if (seq !== certSeq) return; // llegó una respuesta más nueva
   certs = res; renderCerts();
 }
@@ -280,15 +300,23 @@ function renderCerts() {
     <td>${fd(c.mail_fecha)}${c.fecha_dudosa ? ' <span class="badge b-reclamado" title="No se pudo leer la fecha original del mail">fecha?</span>' : ""}</td>
     <td><b>${esc(c.lote) || '<span class="badge b-revisar">sin lote</span>'}</b></td><td>${esc(c.material)}</td><td>${esc(c.proveedor)}</td>
     <td class="muted">${esc(c.mail_remitente)}${c.mail_asunto ? "<br>" + esc(c.mail_asunto) : ""}</td>
-    <td>${badge(c.estado_lectura, LECT[c.estado_lectura])}</td>
-    <td style="white-space:nowrap">${c.tiene_pdf ? `<button class="btn small" data-pdf="${c.id}" data-t="${esc(c.lote)}">PDF</button> ` : ""}<button class="btn small" data-edit="${c.id}">Editar</button></td></tr>`).join("")
+    <td>${badge(c.estado_lectura, LECT[c.estado_lectura])}${c.estado_lectura === "descartado" && c.notas ? `<div class="muted" style="font-size:12px;margin-top:3px">${esc(c.notas.split("\n").pop())}</div>` : ""}</td>
+    <td style="white-space:nowrap">${c.tiene_pdf ? `<button class="btn small" data-pdf="${c.id}" data-t="${esc(c.lote)}">PDF</button> ` : ""}${c.estado_lectura === "descartado" ? `<button class="btn small" data-restaurar="${c.id}">Restaurar</button>` : `<button class="btn small" data-edit="${c.id}">Editar</button> <button class="btn small danger" data-descartar="${c.id}" title="Descartar: no es un certificado válido">Descartar</button>`}</td></tr>`).join("")
     : `<tr><td colspan="7" class="empty">Sin resultados</td></tr>`;
 }
 $("#c-q").addEventListener("input", renderCerts);
-$("#c-pend").addEventListener("change", loadCerts);
+$("#c-pend").addEventListener("change", () => { if ($("#c-pend").checked) $("#c-desc").checked = false; loadCerts(); });
+$("#c-desc").addEventListener("change", () => { if ($("#c-desc").checked) $("#c-pend").checked = false; loadCerts(); });
 $("#c-body").addEventListener("click", (e) => {
   const p = e.target.closest("[data-pdf]"); if (p) return openPdf(p.dataset.pdf, p.dataset.t);
-  const b = e.target.closest("[data-edit]"); if (b) editCert(b.dataset.edit);
+  const b = e.target.closest("[data-edit]"); if (b) return editCert(b.dataset.edit);
+  const d = e.target.closest("[data-descartar]"); if (d) {
+    const c = certs.find((r) => String(r.id) === d.dataset.descartar); if (!c) return;
+    askMotivo({ title: "Descartar certificado", hint: `Lote ${c.lote || "sin lote"} · ${c.mail_remitente || ""} · ${c.mail_asunto || ""}. Deja de contarse como certificado, pero el registro y el PDF se conservan y se puede restaurar.`,
+      run: (motivo) => send(`/api/certificados/${c.id}/descartar`, "POST", { motivo }), after: () => Promise.all([loadCerts(), loadEntregas(), loadResumen()]) });
+  }
+  const r = e.target.closest("[data-restaurar]"); if (r) send(`/api/certificados/${r.dataset.restaurar}/restaurar`, "POST", {})
+    .then(() => Promise.all([loadCerts(), loadEntregas(), loadResumen()])).catch((er) => alert(er.message));
 });
 
 /* ---- visor PDF ---- */
@@ -343,6 +371,15 @@ $("#f-ent").addEventListener("submit", async (e) => {
     cantidad_kg: $("#ef-kg").value === "" ? null : Number($("#ef-kg").value) };
   try { await send("/api/entregas", "POST", b); $("#ov-ent").classList.remove("on"); await Promise.all([loadEntregas(), loadResumen()]); }
   catch (er) { $("#ef-err").textContent = er.message; }
+});
+
+/* ---- descartar / anular con motivo ---- */
+let pendingDel = null;
+function askMotivo(o) { pendingDel = o; $("#del-title").textContent = o.title; $("#del-hint").textContent = o.hint; $("#del-motivo").value = ""; $("#del-err").textContent = ""; $("#ov-del").classList.add("on"); $("#del-motivo").focus(); }
+$("#f-del").addEventListener("submit", async (e) => {
+  e.preventDefault(); if (!pendingDel) return;
+  try { await pendingDel.run($("#del-motivo").value.trim()); $("#ov-del").classList.remove("on"); const f = pendingDel.after; pendingDel = null; await f(); }
+  catch (er) { $("#del-err").textContent = er.message; }
 });
 
 /* ---- cierres ---- */
