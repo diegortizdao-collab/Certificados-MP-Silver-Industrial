@@ -296,7 +296,13 @@ let blobUrl = null;
 async function openPdf(id, titulo) {
   try {
     const r = await api(`/api/certificados/${id}/pdf`);
-    if ((r.headers.get("content-type") || "").includes("json")) { const j = await r.json(); if (j.drive) window.open(j.drive, "_blank", "noopener"); return; }
+    if ((r.headers.get("content-type") || "").includes("json")) {
+      const j = await r.json(); if (!j.drive) return;
+      $("#pdf-title").textContent = "Certificado · lote " + (titulo || "");
+      $("#pdf-frame").src = j.drive.replace(/\/view.*$/, "/preview"); $("#pdf-open").href = j.drive;
+      $("#pdf-dl").hidden = true; $("#ov-pdf").classList.add("on"); return;
+    }
+    $("#pdf-dl").hidden = false;
     if (blobUrl) URL.revokeObjectURL(blobUrl);
     blobUrl = URL.createObjectURL(await r.blob());
     $("#pdf-title").textContent = "Certificado · lote " + (titulo || "");
