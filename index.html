@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificados MP · Silver Industrial</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#fff; --ink:#1b2430; --muted:#667085; --line:#e3e6eb;
+    --brand:#0f3d5e; --brand-2:#1a5f8f; --ok:#18794e; --ok-bg:#e3f4ea; --warn:#a15c00; --warn-bg:#fdf0d8;
+    --bad:#b42318; --bad-bg:#fde7e4; --info:#2457a6; --info-bg:#e5edfa; --gray-bg:#eceff3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#12161c; --panel:#1b2129; --ink:#e8ecf1; --muted:#98a2b3; --line:#2b3440; --brand:#6bb3e6; --brand-2:#8ec7ee;
+      --ok:#5fd49a; --ok-bg:#12341f; --warn:#f0b35a; --warn-bg:#3a2a0d; --bad:#ff8a7e; --bad-bg:#3c1713; --info:#8db4f0; --info-bg:#172a4a; --gray-bg:#262e38; }
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+  header{background:var(--brand);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  @media (prefers-color-scheme: dark){ header{background:#0d2a40;color:#e8ecf1} }
+  header h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.2px}
+  header .sub{opacity:.75;font-size:12px}
+  header .sp{flex:1}
+  header .who{font-size:13px;opacity:.9}
+  main{flex:1;padding:16px;max-width:1280px;width:100%;margin:0 auto}
+  button,input,select,textarea{font:inherit;color:inherit}
+  .btn{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+  .btn:hover{border-color:var(--brand-2)}
+  .btn.primary{background:var(--brand-2);border-color:var(--brand-2);color:#fff}
+  .btn.small{padding:4px 8px;font-size:12px}
+  header .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.4)}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left}
+  .kpi b{display:block;font-size:24px;line-height:1.1} .kpi span{font-size:12px;color:var(--muted)}
+  .kpi.on{outline:2px solid var(--brand-2)}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:12px}
+  .tab{padding:8px 14px;border:0;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--muted);font-weight:600}
+  .tab.on{color:var(--brand-2);border-color:var(--brand-2)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .bar input,.bar select{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+  .bar input[type=search]{min-width:220px;flex:1}
+  .tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto}
+  table{border-collapse:collapse;width:100%;min-width:860px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;position:sticky;top:0;background:var(--panel)}
+  tr:last-child td{border-bottom:0}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+  .b-con_certificado,.b-confirmado{background:var(--ok-bg);color:var(--ok)}
+  .b-reclamado,.b-sugerido{background:var(--warn-bg);color:var(--warn)}
+  .b-sin_certificado,.b-revisar{background:var(--bad-bg);color:var(--bad)}
+  .b-sin_lote{background:var(--gray-bg);color:var(--muted)}
+  .muted{color:var(--muted)} .count{color:var(--muted);font-size:12px;margin:6px 2px}
+  .empty{padding:30px;text-align:center;color:var(--muted)}
+  /* modal */
+  .ov{position:fixed;inset:0;background:rgba(10,15,22,.55);display:none;align-items:center;justify-content:center;padding:14px;z-index:20}
+  .ov.on{display:flex}
+  .modal{background:var(--panel);border-radius:12px;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:16px;border:1px solid var(--line)}
+  .modal.wide{max-width:960px;height:92vh;display:flex;flex-direction:column}
+  .modal h2{margin:0 0 10px;font-size:16px}
+  .modal iframe{flex:1;width:100%;border:1px solid var(--line);border-radius:8px;min-height:300px;background:#fff}
+  label{display:block;font-size:12px;color:var(--muted);margin:10px 0 3px}
+  .modal input,.modal select,.modal textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  .err{color:var(--bad);font-size:13px;min-height:18px;margin-top:8px}
+  .hint{background:var(--info-bg);color:var(--info);padding:8px 10px;border-radius:8px;font-size:12.5px;margin-bottom:8px}
+  footer{padding:14px 16px;text-align:center;font-size:12px;color:var(--muted)}
+  @media print{header .btn,.bar,.tabs,.kpis,footer .noprint{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Certificados de materia prima</h1><div class="sub">Silver Industrial · trazabilidad por lote</div></div>
+  <div class="sp"></div>
+  <span class="who" id="who"></span>
+  <button class="btn small" id="salir" hidden>Salir</button>
+</header>
+
+<main id="app" hidden>
+  <div class="kpis" id="kpis"></div>
+  <div class="tabs">
+    <button class="tab on" data-tab="entregas">Entregas</button>
+    <button class="tab" data-tab="certificados">Certificados</button>
+  </div>
+
+  <section id="v-entregas">
+    <div class="bar">
+      <input type="search" id="e-q" placeholder="Buscar lote, material o remito…">
+      <select id="e-prov"><option value="">Todos los proveedores</option></select>
+      <select id="e-tipo"><option value="">Resina y masterbatch</option><option value="resina">Resina</option><option value="masterbatch">Masterbatch</option></select>
+      <select id="e-estado"><option value="">Todos los estados</option>
+        <option value="con_certificado">Con certificado</option><option value="reclamado">Reclamado</option>
+        <option value="sin_certificado">Sin certificado</option><option value="sin_lote">Sin lote</option></select>
+      <button class="btn" id="e-csv">Descargar CSV</button>
+      <button class="btn primary" id="e-new">+ Nueva entrega</button>
+    </div>
+    <div class="count" id="e-count"></div>
+    <div class="tablewrap"><table><thead><tr>
+      <th>Fecha</th><th>Proveedor</th><th>Documento</th><th>Material</th><th>Lote</th><th>Estado</th><th></th>
+    </tr></thead><tbody id="e-body"></tbody></table></div>
+  </section>
+
+  <section id="v-certificados" hidden>
+    <div class="bar">
+      <input type="search" id="c-q" placeholder="Buscar lote, material o remitente…">
+      <label style="margin:0;display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" id="c-pend" style="width:auto"> Solo por revisar</label>
+    </div>
+    <div class="count" id="c-count"></div>
+    <div class="tablewrap"><table><thead><tr>
+      <th>Mail</th><th>Lote</th><th>Material</th><th>Proveedor</th><th>Remitente / asunto</th><th>Lectura</th><th></th>
+    </tr></thead><tbody id="c-body"></tbody></table></div>
+  </section>
+</main>
+
+<footer>Desarrollado por Mgter. Diego Ortiz — Líder de Mejora Continua | Consultor ISO</footer>
+
+<!-- login -->
+<div class="ov on" id="ov-login"><form class="modal" id="f-login">
+  <h2>Ingresar</h2>
+  <label>Tu nombre (queda registrado en cada cambio)</label><input id="l-user" autocomplete="name" required>
+  <label>Clave de planta</label><input id="l-key" type="password" autocomplete="current-password" required>
+  <div class="err" id="l-err"></div>
+  <div class="acts"><button class="btn primary">Entrar</button></div>
+</form></div>
+
+<!-- visor PDF -->
+<div class="ov" id="ov-pdf"><div class="modal wide">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><h2 style="flex:1;margin:0" id="pdf-title">Certificado</h2>
+    <a class="btn small" id="pdf-open" target="_blank" rel="noopener">Abrir en pestaña nueva</a>
+    <a class="btn small" id="pdf-dl">Descargar</a>
+    <button class="btn small" data-close>Cerrar</button></div>
+  <iframe id="pdf-frame" title="Certificado PDF"></iframe>
+</div></div>
+
+<!-- editar certificado -->
+<div class="ov" id="ov-cert"><form class="modal" id="f-cert">
+  <h2>Revisar certificado</h2>
+  <div class="hint" id="c-hint"></div>
+  <div class="row2"><div><label>Lote</label><input id="cf-lote"></div><div><label>Tipo</label>
+    <select id="cf-tipo"><option value="resina">Resina</option><option value="masterbatch">Masterbatch</option></select></div></div>
+  <label>Material</label><input id="cf-material">
+  <div class="row2"><div><label>Proveedor</label><select id="cf-prov"></select></div><div><label>Fabricante (informativo)</label><input id="cf-fab"></div></div>
+  <div class="row2"><div><label>Fecha del mail</label><input id="cf-fecha" type="date"></div><div><label>Fecha de emisión</label><input id="cf-emi" type="date"></div></div>
+  <label>Notas</label><textarea id="cf-notas" rows="2"></textarea>
+  <div class="err" id="cf-err"></div>
+  <div class="acts"><button type="button" class="btn" data-close>Cancelar</button>
+    <button type="button" class="btn" id="cf-save">Guardar</button><button class="btn primary">Guardar y confirmar</button></div>
+</form></div>
+
+<!-- nueva entrega -->
+<div class="ov" id="ov-ent"><form class="modal" id="f-ent">
+  <h2>Nueva entrega</h2>
+  <div class="row2"><div><label>Fecha de ingreso</label><input id="ef-fecha" type="date" required></div>
+    <div><label>Proveedor</label><select id="ef-prov" required></select></div></div>
+  <div class="row2"><div><label>Documento</label><select id="ef-td"><option value="remito">Remito</option><option value="factura">Factura</option></select></div>
+    <div><label>Nº</label><input id="ef-doc"></div></div>
+  <label>Material</label><input id="ef-mat" required>
+  <div class="row2"><div><label>Lote (Partida)</label><input id="ef-lote"></div><div><label>Tipo</label>
+    <select id="ef-tipo"><option value="resina">Resina</option><option value="masterbatch">Masterbatch</option></select></div></div>
+  <label>Cantidad (kg)</label><input id="ef-kg" type="number" step="0.01" min="0">
+  <div class="err" id="ef-err"></div>
+  <div class="acts"><button type="button" class="btn" data-close>Cancelar</button><button class="btn primary">Guardar</button></div>
+</form></div>
+
+<script>
+"use strict";
+// Dirección del Worker (API). Si cambia, se edita solo esta línea.
+const API = "https://certificados-mp-silver-api.diegortizdao.workers.dev";
+
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const ESTADO = { con_certificado: "Con certificado", reclamado: "Reclamado", sin_certificado: "Sin certificado", sin_lote: "Sin lote" };
+const LECT = { confirmado: "Confirmado", sugerido: "Sugerido", revisar: "Revisar" };
+
+let certsLoaded = false, certSeq = 0, session = null, provs = [], entregas = [], certs = [], resumen = null, kpiFilter = "";
+const store = { get(k){ try { return sessionStorage.getItem(k); } catch { return null; } },
+                set(k,v){ try { sessionStorage.setItem(k,v); } catch {} }, del(k){ try { sessionStorage.removeItem(k); } catch {} } };
+
+async function api(path, opt = {}) {
+  const r = await fetch(API + path, { ...opt, headers: { "Content-Type": "application/json",
+    "X-Planta-Key": session.key, "X-Usuario": session.user, ...(opt.headers || {}) } });
+  if (r.status === 401) { logout(); throw new Error("Clave incorrecta"); }
+  if (!r.ok) { let m = "Error " + r.status; try { m = (await r.json()).error || m; } catch {} throw new Error(m); }
+  return r;
+}
+const getJSON = async (p) => (await api(p)).json();
+const send = (p, method, body) => api(p, { method, body: JSON.stringify(body) }).then((r) => r.json());
+
+const fd = (v) => { if (!v) return ""; const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}/${m[2]}/${m[1]}` : ""; };
+const hoyLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const dateInput = (v) => (v ? String(v).slice(0, 10) : "");
+const badge = (cls, txt) => `<span class="badge b-${cls}">${esc(txt)}</span>`;
+
+/* ---- sesión ---- */
+function logout() { store.del("sess"); session = null; $("#app").hidden = true; $("#salir").hidden = true; $("#who").textContent = ""; $("#ov-login").classList.add("on"); }
+async function start() {
+  $("#ov-login").classList.remove("on"); $("#app").hidden = false; $("#salir").hidden = false; $("#who").textContent = session.user;
+  provs = await getJSON("/api/proveedores");
+  const opts = provs.map((p) => `<option value="${p.id}">${esc(p.nombre)}</option>`).join("");
+  $("#e-prov").insertAdjacentHTML("beforeend", opts);
+  $("#ef-prov").innerHTML = `<option value="">—</option>` + opts;
+  $("#cf-prov").innerHTML = `<option value="">—</option>` + opts;
+  await Promise.all([loadResumen(), loadEntregas()]);
+}
+$("#f-login").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("#l-err").textContent = "";
+  session = { user: $("#l-user").value.trim(), key: $("#l-key").value };
+  try { await api("/api/resumen"); store.set("sess", JSON.stringify(session)); $("#l-key").value = ""; await start(); }
+  catch (err) { session = null; $("#l-err").textContent = err.message.includes("Failed") ? "No se pudo conectar con el servidor." : err.message; }
+});
+$("#salir").addEventListener("click", logout);
+
+/* ---- resumen ---- */
+async function loadResumen() {
+  resumen = await getJSON("/api/resumen");
+  const n = (k) => (resumen.estados.find((x) => x.estado === k) || { n: 0 }).n;
+  const tiles = [["con_certificado", n("con_certificado")], ["reclamado", n("reclamado")], ["sin_certificado", n("sin_certificado")], ["sin_lote", n("sin_lote")]];
+  $("#kpis").innerHTML = tiles.map(([k, v]) => `<button class="kpi ${kpiFilter === k ? "on" : ""}" data-k="${k}"><b>${v}</b><span>${ESTADO[k]}</span></button>`).join("") +
+    `<button class="kpi ${kpiFilter === "revisar" ? "on" : ""}" data-k="revisar"><b>${resumen.certificados_por_revisar}</b><span>Certificados por revisar</span></button>`;
+}
+$("#kpis").addEventListener("click", (e) => {
+  const k = e.target.closest(".kpi")?.dataset.k; if (!k) return;
+  kpiFilter = kpiFilter === k ? "" : k;
+  if (k === "revisar") { $("#c-pend").checked = !!kpiFilter; tab("certificados"); loadCerts(); }
+  else { tab("entregas"); $("#e-estado").value = kpiFilter; loadEntregas(); }
+  loadResumen();
+});
+
+/* ---- pestañas ---- */
+function tab(t) {
+  document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
+  $("#v-entregas").hidden = t !== "entregas"; $("#v-certificados").hidden = t !== "certificados";
+  if (t === "certificados" && !certsLoaded) loadCerts();
+}
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => tab(b.dataset.tab)));
+
+/* ---- entregas ---- */
+const debounce = (fn, ms = 300) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+async function loadEntregas() {
+  const p = new URLSearchParams();
+  for (const [k, id] of [["q", "e-q"], ["proveedor", "e-prov"], ["tipo", "e-tipo"], ["estado", "e-estado"]]) if ($("#" + id).value) p.set(k, $("#" + id).value);
+  $("#e-body").innerHTML = `<tr><td colspan="7" class="empty">Cargando…</td></tr>`;
+  try { entregas = await getJSON("/api/entregas?" + p); } catch (e) { $("#e-body").innerHTML = `<tr><td colspan="7" class="empty">${esc(e.message)}</td></tr>`; return; }
+  $("#e-count").textContent = entregas.length + " entregas" + (entregas.length >= 2000 ? " (se muestran las 2000 más recientes; afinar el filtro)" : "");
+  $("#e-body").innerHTML = entregas.length ? entregas.map((e) => `<tr>
+    <td>${fd(e.fecha_ingreso)}</td><td>${esc(e.proveedor)}</td>
+    <td>${e.documento ? esc((e.tipo_documento === "factura" ? "" : "Remito ") + e.documento) : '<span class="muted">—</span>'}</td>
+    <td>${esc(e.material)}${e.tipo === "masterbatch" ? ' <span class="muted">(MB)</span>' : ""}</td>
+    <td><b>${esc(e.lote) || '<span class="muted">—</span>'}</b></td>
+    <td>${badge(e.estado, ESTADO[e.estado])}${e.reclamo_estado === "recibido" ? ' <span class="muted" title="Reclamado y recibido">↺</span>' : ""}</td>
+    <td>${e.certificado_vinculado_id ? `<button class="btn small" data-pdf="${e.certificado_vinculado_id}" data-t="${esc(e.lote)}">Ver certificado</button>` : ""}</td></tr>`).join("")
+    : `<tr><td colspan="7" class="empty">Sin resultados</td></tr>`;
+}
+["e-prov", "e-tipo", "e-estado"].forEach((id) => $("#" + id).addEventListener("change", () => { kpiFilter = ""; loadEntregas(); loadResumen(); }));
+$("#e-q").addEventListener("input", debounce(loadEntregas));
+$("#e-body").addEventListener("click", (e) => { const b = e.target.closest("[data-pdf]"); if (b) openPdf(b.dataset.pdf, b.dataset.t); });
+
+$("#e-csv").addEventListener("click", () => {
+  const cols = ["fecha_ingreso", "proveedor", "tipo_documento", "documento", "material", "lote", "tipo", "estado", "cantidad_kg"];
+  const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const csv = "﻿" + [cols.join(";")].concat(entregas.map((e) => cols.map((c) => cell(c === "fecha_ingreso" ? fd(e[c]) : e[c])).join(";"))).join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.download = "certificados-por-estado-" + hoyLocal() + ".csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+/* ---- certificados ---- */
+async function loadCerts() {
+  certsLoaded = true; const seq = ++certSeq;
+  $("#c-body").innerHTML = `<tr><td colspan="7" class="empty">Cargando…</td></tr>`;
+  let res;
+  try { res = await getJSON("/api/certificados" + ($("#c-pend").checked ? "?pendientes=1" : "")); } catch (e) { if (seq === certSeq) $("#c-body").innerHTML = `<tr><td colspan="7" class="empty">${esc(e.message)}</td></tr>`; return; }
+  if (seq !== certSeq) return; // llegó una respuesta más nueva
+  certs = res; renderCerts();
+}
+function renderCerts() {
+  const q = $("#c-q").value.trim().toLowerCase();
+  const list = certs.filter((c) => !q || [c.lote, c.material, c.mail_remitente, c.mail_asunto].some((v) => String(v || "").toLowerCase().includes(q)));
+  $("#c-count").textContent = list.length + " certificados";
+  $("#c-body").innerHTML = list.length ? list.map((c) => `<tr>
+    <td>${fd(c.mail_fecha)}${c.fecha_dudosa ? ' <span class="badge b-reclamado" title="No se pudo leer la fecha original del mail">fecha?</span>' : ""}</td>
+    <td><b>${esc(c.lote) || '<span class="badge b-revisar">sin lote</span>'}</b></td><td>${esc(c.material)}</td><td>${esc(c.proveedor)}</td>
+    <td class="muted">${esc(c.mail_remitente)}${c.mail_asunto ? "<br>" + esc(c.mail_asunto) : ""}</td>
+    <td>${badge(c.estado_lectura, LECT[c.estado_lectura])}</td>
+    <td style="white-space:nowrap">${c.tiene_pdf ? `<button class="btn small" data-pdf="${c.id}" data-t="${esc(c.lote)}">PDF</button> ` : ""}<button class="btn small" data-edit="${c.id}">Editar</button></td></tr>`).join("")
+    : `<tr><td colspan="7" class="empty">Sin resultados</td></tr>`;
+}
+$("#c-q").addEventListener("input", renderCerts);
+$("#c-pend").addEventListener("change", loadCerts);
+$("#c-body").addEventListener("click", (e) => {
+  const p = e.target.closest("[data-pdf]"); if (p) return openPdf(p.dataset.pdf, p.dataset.t);
+  const b = e.target.closest("[data-edit]"); if (b) editCert(b.dataset.edit);
+});
+
+/* ---- visor PDF ---- */
+let blobUrl = null;
+async function openPdf(id, titulo) {
+  try {
+    const r = await api(`/api/certificados/${id}/pdf`);
+    if ((r.headers.get("content-type") || "").includes("json")) { const j = await r.json(); if (j.drive) window.open(j.drive, "_blank", "noopener"); return; }
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+    blobUrl = URL.createObjectURL(await r.blob());
+    $("#pdf-title").textContent = "Certificado · lote " + (titulo || "");
+    $("#pdf-frame").src = blobUrl; $("#pdf-open").href = blobUrl;
+    $("#pdf-dl").href = blobUrl; $("#pdf-dl").download = `certificado-${titulo || id}.pdf`;
+    $("#ov-pdf").classList.add("on");
+  } catch (e) { alert(e.message.includes("no tiene PDF") ? "Este certificado todavía no tiene el PDF vinculado." : e.message); }
+}
+
+/* ---- editar certificado ---- */
+let editing = null;
+function editCert(id) {
+  editing = certs.find((c) => String(c.id) === String(id)); if (!editing) return;
+  const c = editing;
+  $("#c-hint").textContent = c.origen === "mail" ? `Llegó por mail de ${c.mail_remitente || "?"}. Compará con el PDF y completá lo que falte.` : "Cargado desde la planilla original.";
+  $("#cf-lote").value = c.lote || ""; $("#cf-tipo").value = c.tipo || "resina"; $("#cf-material").value = c.material || "";
+  $("#cf-prov").value = c.proveedor_id || ""; $("#cf-fab").value = c.fabricante || "";
+  $("#cf-fecha").value = dateInput(c.mail_fecha); $("#cf-emi").value = dateInput(c.fecha_emision); $("#cf-notas").value = c.notas || "";
+  $("#cf-err").textContent = ""; $("#ov-cert").classList.add("on");
+}
+async function saveCert(confirmar) {
+  const b = { lote: $("#cf-lote").value.trim(), tipo: $("#cf-tipo").value, material: $("#cf-material").value.trim(),
+    proveedor_id: $("#cf-prov").value || null, fabricante: $("#cf-fab").value.trim(), mail_fecha: $("#cf-fecha").value || null,
+    fecha_emision: $("#cf-emi").value || null, notas: $("#cf-notas").value.trim(), fecha_dudosa: false };
+  if (confirmar) { if (!b.lote) { $("#cf-err").textContent = "Para confirmar hace falta el lote."; return; } b.confirmar = true; }
+  try { await send("/api/certificados/" + editing.id, "PUT", b); $("#ov-cert").classList.remove("on"); await Promise.all([loadCerts(), loadEntregas(), loadResumen()]); }
+  catch (e) { $("#cf-err").textContent = e.message; }
+}
+$("#f-cert").addEventListener("submit", (e) => { e.preventDefault(); saveCert(true); });
+$("#cf-save").addEventListener("click", () => saveCert(false));
+
+/* ---- nueva entrega ---- */
+$("#e-new").addEventListener("click", () => { $("#f-ent").reset(); $("#ef-fecha").value = hoyLocal(); $("#ef-err").textContent = ""; $("#ov-ent").classList.add("on"); });
+$("#f-ent").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const b = { fecha_ingreso: $("#ef-fecha").value, proveedor_id: Number($("#ef-prov").value) || null, tipo_documento: $("#ef-td").value,
+    documento: $("#ef-doc").value.trim(), material: $("#ef-mat").value.trim(), lote: $("#ef-lote").value.trim(), tipo: $("#ef-tipo").value,
+    cantidad_kg: $("#ef-kg").value === "" ? null : Number($("#ef-kg").value) };
+  try { await send("/api/entregas", "POST", b); $("#ov-ent").classList.remove("on"); await Promise.all([loadEntregas(), loadResumen()]); }
+  catch (er) { $("#ef-err").textContent = er.message; }
+});
+
+/* ---- cierres ---- */
+document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => b.closest(".ov").classList.remove("on")));
+document.querySelectorAll(".ov").forEach((o) => o.addEventListener("mousedown", (e) => { if (e.target === o && o.id !== "ov-login") o.classList.remove("on"); }));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") document.querySelectorAll(".ov.on:not(#ov-login)").forEach((o) => o.classList.remove("on")); });
+$("#ov-pdf").addEventListener("transitionend", () => {});
+new MutationObserver(() => { if (!$("#ov-pdf").classList.contains("on")) $("#pdf-frame").src = "about:blank"; }).observe($("#ov-pdf"), { attributes: true });
+
+/* ---- arranque ---- */
+try { const s = JSON.parse(store.get("sess") || "null"); if (s) { session = s; start().catch(logout); } } catch {}
+</script>
+</body>
+</html>
